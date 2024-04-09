@@ -1,12 +1,8 @@
 ﻿
 using Confluent.Kafka;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using SimpleInjector;
-using SimpleInjector.Lifestyles;
 using Spotify_Connect.Business.Configuration;
 using Spotify_Connect.Business.Interfaces.Services;
-using Spotify_Connect.Business.Services;
 
 namespace dot_net_api_study.Consumers
 {
@@ -14,29 +10,26 @@ namespace dot_net_api_study.Consumers
     {
         private readonly IConsumer<Ignore, string> _consumer;
         private readonly KafkaConfiguration _kafkaConfiguration;
-        private readonly IServiceScopeFactory _serviceScopeFactory; 
+        private readonly IServiceScope _scope;
 
 
-		public ArtistConsumer(IConsumer<Ignore, string> consumer, KafkaConfiguration kafkaConfiguration,
-            IServiceScopeFactory serviceScopeFactory
+        public ArtistConsumer(IConsumer<Ignore, string> consumer, KafkaConfiguration kafkaConfiguration
+            , IServiceProvider serviceScopeFactory
             )
-		{
-			_consumer = consumer;
-			_kafkaConfiguration = kafkaConfiguration;
-            _serviceScopeFactory = serviceScopeFactory;
-		}
+        {
+            _consumer = consumer;
+            _kafkaConfiguration = kafkaConfiguration;
+            _scope = serviceScopeFactory.CreateScope();
+        }
 
-		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Yield();
             try
             {
-				using IServiceScope scope = _serviceScopeFactory.CreateScope();
+                var context = _scope.ServiceProvider.GetRequiredService<IArtistService>();
 
 
-				var artistService = scope
-			    .ServiceProvider
-		        .GetRequiredService<IArtistService>();
                 _consumer.Subscribe(_kafkaConfiguration.Topics.Artist);
                 while (!stoppingToken.IsCancellationRequested)
                 {
@@ -45,12 +38,12 @@ namespace dot_net_api_study.Consumers
                         continue;
                     var message = result.Message.Value;
                     var response = JsonConvert.DeserializeObject<string>(message);
-                    if (response is not null) await artistService.GetArtist(response);
+                    if (response is not null) await context.GetArtist(response);
                     _consumer.Commit(result);
                     _consumer.StoreOffset(result);
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 _consumer.Close();
                 _consumer.Dispose();
