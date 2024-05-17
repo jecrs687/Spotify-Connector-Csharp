@@ -21,5 +21,10 @@ namespace Spotify_Connector.Controllers
             await _artistService.PostArtist(id);
             return Ok();
         }
-    }
+		[HttpGet("{id}")]
+		public async Task<IActionResult> GetRequest([FromRoute] string id)
+		{
+			return Ok(await _artistService.GetArtist(id));
+		}
+	}
 }

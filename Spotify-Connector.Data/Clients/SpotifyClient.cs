@@ -19,7 +19,7 @@ namespace Spotify_Connector.Data.Clients
         {
             var accessToken = await GetAccessToken();
 
-            var result = await $"https://accounts.spotify.com/api/artists/{artistId}"
+            var result = await $"https://api.spotify.com/v1/artists/{artistId}"
                 .WithHeader("Content-type", "application/x-www-form-urlencoded")
                 .WithOAuthBearerToken(accessToken.access_token)
                 .AllowAnyHttpStatus()

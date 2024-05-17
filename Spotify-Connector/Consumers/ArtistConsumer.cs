@@ -38,7 +38,7 @@ namespace dot_net_api_study.Consumers
                         continue;
                     var message = result.Message.Value;
                     var response = JsonConvert.DeserializeObject<string>(message);
-                    if (response is not null) await context.GetArtist(response);
+                    if (response is not null) await context.SaveArtist(response);
                     _consumer.Commit(result);
                     _consumer.StoreOffset(result);
                 }
